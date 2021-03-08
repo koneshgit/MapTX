@@ -1,0 +1,6 @@
+python                    3.8.8                hdbf39b2_4  
+bokeh                     2.3.0            py38haa244fe_0    conda-forge
+folium                    0.12.0             pyhd8ed1ab_0    conda-forge
+geopandas                 0.6.1                      py_0  
+pandas                    1.2.2            py38hf11a4ad_0  
+json5                     0.9.5                      py_0

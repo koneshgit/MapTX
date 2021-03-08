@@ -1,28 +1,30 @@
 {
-"shapeFile":"../data/C2020_TX_County_Sub.geojson",
+"shapeFile":"../data/Tract.geojson",
 "shapeUrl":"None",
-"dataFile":"../data/County_Sub.csv",
+"dataFile":"../data/rpl.csv",
 "shapeFields":{
 	"s10":"OBJECTID",
-	"s2":"COUSUBNS",
 	"s3":"GEOID",
-	"s4":"NAMELSAD",
 	"s5":"geometry"
 	},
 "shapeKey":"OBJECTID",
 "dataFields":{
-	"d1":"OBJECTID",
-	"d2":"ALAND",
-	"d3":"AWATER",
-	"d4":"INTPTLAT",
-	"d5":"INTPTLON"
+	"d1":"fips",
+	"d2":"e_totpop",
+	"d3":"area_sqmi",
+	"d4":"theme1",
+	"d5" : "theme2",
+	"d6" : "theme3",
+	"d7" : "theme4",
+	"d8" : "themes",
+	"d9" :"zip"
 	},
-"dataKey":"OBJECTID",
-"data2Viz":"INTPTLAT",
+"dataKey":"fips",
+"data2Viz":"e_totpop",
 "dataName2Vize":"Latitudeofthecenterofsubdivision",
 "cMapName": "YlGnBu",
 "cNumber" : "32",
 "reversedColorMap" : "False",
-"figTitle" : "Visualization map",
-"htmlOut": "../data/Tx_Subd.html"
+"figTitle" : "Census Data Map",
+"htmlOut": "../data/tract.html"
 }

@@ -4,52 +4,56 @@ Created on Wed Mar  3 14:57:22 2021
 
 @author: mkoneshloo
 """
-from os.path import  splitext
+from os import path
 import pandas as pd
 import geopandas as gpd
 import json
-from bokeh.io import output_notebook, show, output_file
+from bokeh.io import output_notebook, show, output_file#, hplot
 from bokeh.models import GeoJSONDataSource, LinearColorMapper, ColorBar, HoverTool
 from bokeh.palettes import brewer
 from bokeh.plotting import figure, output_file, save
-
+#from bokeh.charts import Histogram
 
 # Setting parameters ------------------------------------------------
 #input params
-shapeFile = r'C:\MoK\Projects\HFB\maptool\data\C2020_TX_County_Sub.geojson'
-shapeUrl =''
-dataFile = r'C:\MoK\Projects\HFB\maptool\data\County_Sub.csv'
-shapeFields =['OBJECTID','COUSUBNS','GEOID','NAMELSAD', 'geometry']
-shapeKey ='OBJECTID'
-dataFields =['OBJECTID', 'ALAND','AWATER','INTPTLAT','INTPTLON'] #OBJECTID,COUSUBNS,GEOID,NAMELSAD,CLASSFP,ALAND,AWATER,INTPTLAT,INTPTLON
-dataKey ='OBJECTID'
-data2Viz= 'INTPTLAT'
-dataName2Vize='Latitude of the center of subdivision'
+settingSrc = r"../data/setting.json"
+def load_settings(settingSrc):
+    with open(settingSrc) as f:
+        pSet = json.load(f)
+        pSet["shapeFields"]=list(pSet["shapeFields"].values())
+        pSet["dataFields"]=list(pSet["dataFields"].values())
 
+    return pSet
+    
 #Output params
-cMapName = 'YlGnBu'
-cNumber = 32
-reversedColorMap = 0
-figTitle = ' Visualization map'
+# cMapName = 'YlGnBu'
+# cNumber = 32
+# reversedColorMap = 0
+# figTitle = ' Visualization map'
 
 # Check input   -------------------------------------------------------
-# Files are accesible
 
+# Files are accesible
+pSet = load_settings(settingSrc)
 
 # Fields are in dataframes
-_, file_extension = splitext(shapeFile)
+_, file_extension = path.splitext(pSet["shapeFile"])
 
 if file_extension.lower() =='geojson':
-    gdf = gpd.read_file(open(shapeFile))
+    gdf = gpd.read_file(open(pSet["shapeFile"]))
 else:
-    gdf = gpd.read_file(shapeFile)
+    gdf = gpd.read_file(pSet["shapeFile"])
 
-gdf=gdf[shapeFields]    
+gdf=gdf[pSet["shapeFields"]]
+if len(pSet["shapeFields"])>0:
+    gdf = gdf[pSet["shapeFields"]] 
+
 #gdf.info()
 
 
-df = pd.read_csv(dataFile)
-df = df[dataFields]
+df = pd.read_csv(pSet["dataFile"])
+if len(pSet["dataFields"])>0:
+    df = df[pSet["dataFields"]]
 #df.head()
 
 
@@ -58,28 +62,27 @@ df = df[dataFields]
 
 #--------------------------------------------------------------------
 #Perform left merge to preserve every row in gdf.
-merged = gdf.merge(df, left_on = shapeKey, right_on = dataKey, how = 'left')
+merged = df.merge(gdf, left_on = pSet["dataKey"], right_on = pSet["shapeKey"], how = 'left')
 
-#Replace NaN values to string 'No data'.
+#Replace NaN values
 #merged.fillna('No data', inplace = True)
-
-
 
 #Read data to json
 merged_json = json.loads(merged.to_json())
 
 #Convert to str like object
 json_data = json.dumps(merged_json)
-
+# with open("merged.json", "w") as data_file:
+#     json.dump(merged_json, data_file, indent=2)
 
 #Input GeoJSON source that contains features for plotting.
 geosource = GeoJSONDataSource(geojson = json_data)
 
 #Define a sequential multi-hue color palette.
-palette = brewer[cMapName][8] #[cNumber]
+palette = brewer[pSet["cMapName"]][8] #[cNumber]
 
 #Reverse color order so that dark blue is highest obesity.
-if reversedColorMap:
+if pSet["reversedColorMap"]:
     palette = palette[::-1]
 
 #Instantiate LinearColorMapper that linearly maps numbers in a range, into a sequence of colors.
@@ -101,28 +104,37 @@ bokeh.models.mappers.LogColorMapper (Python class, in bokeh.models.mappers)
 #tick_labels = {'0': '0%', '5': '5%', '10':'10%', '15':'15%', '20':'20%', '25':'25%', '30':'30%','35':'35%', '40': '>40%'}
 
 #Add hover tool
-hover = HoverTool(tooltips = [ ("Name","@NAMELSAD"),
-                              ("Latitude", "@INTPTLAT"),
-                              ("Location", "($x, $y)")])
+hover = HoverTool(tooltips = [ ("Tracts","@GEOID"),
+                              ("Population", "@e_totpop"),
+                              ("Zip Codes", "@zip")])
 
 #Create color bar. 
 color_bar = ColorBar(color_mapper=color_mapper, label_standoff=8,width = 500, height = 20,
 border_line_color=None,location = (0,0), orientation = 'horizontal') #, major_label_overrides = tick_labels)
 
 #Create figure object.
-p = figure(title = figTitle, plot_height = 600 , plot_width = 950, 
+p = figure(title = pSet["figTitle"], plot_height = 600 , plot_width = 950, 
            toolbar_location = 'left',tools=[hover])
 p.xgrid.grid_line_color = None
 p.ygrid.grid_line_color = None
 
 #Add patch renderer to figure. 
-p.patches('xs','ys', source = geosource,fill_color = {'field' :data2Viz, 'transform' : color_mapper},
+p.patches('xs','ys', source = geosource,fill_color = {'field' :pSet["data2Viz"],'transform' : color_mapper},
           line_color = 'black', line_width = 0.25, fill_alpha = 1)
 
 #Specify figure layout.
 p.add_layout(color_bar, 'below')
-output_file(filename=r"C:\MoK\Projects\HFB\maptool\data\Tx_Subd.html", title="Static HTML file")
-save(p)
+
+#Legend
+p.legend.location = "top_left"
+p.legend.click_policy="hide"
+
+#hist = Histogram(df[pSet['data2Viz']], title=pSet['data2Viz'])
+
+
+output_file(filename=pSet["htmlOut"], title="Static HTML file")
+#save(hplot(p, hist))
+save(p,filename = pSet["htmlOut"])
 
 
 
