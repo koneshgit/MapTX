@@ -8,10 +8,15 @@ from os import path
 import pandas as pd
 import geopandas as gpd
 import json
+## From Bokeh
 from bokeh.io import output_notebook, show, output_file#, hplot
 from bokeh.models import GeoJSONDataSource, LinearColorMapper, ColorBar, HoverTool
+from bokeh.models import CustomJS, Div, Button
 from bokeh.palettes import brewer
 from bokeh.plotting import figure, output_file, save
+from bokeh.layouts import column, row
+# Internal
+from statBok import bistogram
 #from bokeh.charts import Histogram
 
 # Setting parameters ------------------------------------------------
@@ -80,7 +85,7 @@ def cMapper (pSet):
 def add_handle(pSet):
         #Add hover tool
         hover = HoverTool(tooltips = [ ("ID","@"+pSet["dataKey"]),
-                              (pSet["dataName2Vize"], "@"+pSet["data2Viz"]),
+                              (pSet["dataName2Viz"], "@"+pSet["data2Viz"]),
                               (pSet["tipTitle"],pSet["tipName"])])
         return [hover, 'pan', 'tap', 'wheel_zoom']
     
@@ -96,8 +101,8 @@ def fig_gen(pSet, color_mapper, map_handle,geosource):
     p.xgrid.grid_line_color = None
     p.ygrid.grid_line_color = None
     
-    p.patches('xs','ys', source = geosource,fill_color = {'field' :pSet["data2Viz"],'transform' : color_mapper},
-              line_color = 'black', line_width = 0.25, fill_alpha = 1)
+    p.patches('xs','ys', source = geosource,fill_color = {'field' : pSet["data2Viz"],'transform' : color_mapper},
+              line_color = 'black', line_width = 0.25, fill_alpha = 1, legend_label =  pSet["dataName2Viz"])
     
     #Specify figure layout.
     p.add_layout(color_bar, 'below')
@@ -115,9 +120,13 @@ def main_mapper(settingSrc):
     geosource = geo_merge(pSet,df,gdf)
     color_mapper = cMapper (pSet)
     map_handle = add_handle(pSet)
-    p =fig_gen(pSet, color_mapper, map_handle,geosource)
+    patch = fig_gen(pSet, color_mapper, map_handle,geosource)
+    hst = bistogram(pSet, df[pSet["data2Viz"]])
+    button = Button(label="Button", width=300)
+    layout = column(button, row(patch, hst))
+
     
-    save(p,filename = pSet["htmlOut"],title = pSet["figTitle" ])
+    save(layout,filename = pSet["htmlOut"],title = pSet["figTitle" ])
 
 if __name__ == "__main__":
    main_mapper(settingSrc)

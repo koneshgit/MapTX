@@ -15,7 +15,7 @@
 	},
 "dataKey":"GEOID",
 "data2Viz":"Population",
-"dataName2Vize":"Census estimated population",
+"dataName2Viz":"Census estimated population",
 "cMapName": "YlGnBu",
 "cNumber" : "32",
 "reversedColorMap" : "False",
