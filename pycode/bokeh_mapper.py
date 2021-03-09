@@ -16,7 +16,7 @@ from bokeh.plotting import figure, output_file, save
 
 # Setting parameters ------------------------------------------------
 #input params
-settingSrc = r"../data/setting.json"
+settingSrc = r"../data/TractSetting.json"
 def load_settings(settingSrc):
     with open(settingSrc) as f:
         pSet = json.load(f)
@@ -49,7 +49,7 @@ if len(pSet["shapeFields"])>0:
     gdf = gdf[pSet["shapeFields"]] 
 
 #gdf.info()
-
+gdf[pSet["dataKey"]]=gdf[pSet["shapeKey"]].astype('int64')
 
 df = pd.read_csv(pSet["dataFile"])
 if len(pSet["dataFields"])>0:
@@ -62,10 +62,10 @@ if len(pSet["dataFields"])>0:
 
 #--------------------------------------------------------------------
 #Perform left merge to preserve every row in gdf.
-merged = df.merge(gdf, left_on = pSet["dataKey"], right_on = pSet["shapeKey"], how = 'left')
+merged = gdf.merge(df, left_on = pSet["dataKey"], right_on = pSet["dataKey"], how = 'left')
 
 #Replace NaN values
-#merged.fillna('No data', inplace = True)
+merged = merged.dropna()
 
 #Read data to json
 merged_json = json.loads(merged.to_json())
@@ -104,9 +104,9 @@ bokeh.models.mappers.LogColorMapper (Python class, in bokeh.models.mappers)
 #tick_labels = {'0': '0%', '5': '5%', '10':'10%', '15':'15%', '20':'20%', '25':'25%', '30':'30%','35':'35%', '40': '>40%'}
 
 #Add hover tool
-hover = HoverTool(tooltips = [ ("Tracts","@GEOID"),
-                              ("Population", "@e_totpop"),
-                              ("Zip Codes", "@zip")])
+hover = HoverTool(tooltips = [ ("ID","@"+pSet["dataKey"]),
+                              (pSet["dataName2Vize"], "@"+pSet["data2Viz"]),
+                              (pSet["tipTitle"],pSet["tipName"])])
 
 #Create color bar. 
 color_bar = ColorBar(color_mapper=color_mapper, label_standoff=8,width = 500, height = 20,

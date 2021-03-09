@@ -1,0 +1,26 @@
+{
+"shapeFile":"../data/TractPolygon.geojson",
+"shapeUrl":"None",
+"dataFile":"../data/TractData.csv",
+"shapeFields":{
+	"s1":"GEOID",
+	"s2":"geometry"
+	},
+"shapeKey":"GEOID",
+"dataFields":{
+	"d1":"County",
+	"d2":"GEOID",
+	"d3":"Area",
+	"d4":"Population"
+	},
+"dataKey":"GEOID",
+"data2Viz":"Population",
+"dataName2Vize":"Census estimated population",
+"cMapName": "YlGnBu",
+"cNumber" : "32",
+"reversedColorMap" : "False",
+"figTitle" : "Census Data Map",
+"htmlOut": "../data/TractOut.html",
+"tipTitle": "Area",
+"tipName": "@Area"
+}
