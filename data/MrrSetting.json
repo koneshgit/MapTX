@@ -1,0 +1,21 @@
+{
+"shapeFile":"../data/T2018.geojson",
+"shapeUrl":"None",
+"dataFile":"../data/MRR_2018.csv",
+"shapeFields":{
+	"s1":"GEOID",
+	"s2":"geometry"
+	},
+"shapeKey":"GEOID",
+"dataFields":"",
+"dataKey":"GEOID",
+"data2Viz":"ratioUnder5",
+"dataName2Viz":"Ratio of Under 5Yrs (%)",
+"cMapName": "Spectral",
+"cNumber" : "32",
+"reversedColorMap" : "False",
+"figTitle" : "Demographic map",
+"htmlOut": "../data/DemogOut.html",
+"tipTitle": "Total Under 5yrs",
+"tipName": "@TotUnder5"
+}

@@ -11,23 +11,22 @@ import json
 ## From Bokeh
 from bokeh.io import output_notebook, show, output_file#, hplot
 from bokeh.models import GeoJSONDataSource, LinearColorMapper, ColorBar, HoverTool
-from bokeh.models import CustomJS, Div, Button
+from bokeh.models import CustomJS, Div, Button, Select
 from bokeh.palettes import brewer
 from bokeh.plotting import figure, output_file, save
 from bokeh.layouts import column, row
 # Internal
-from statBok import bistogram
-#from bokeh.charts import Histogram
-
+#from statBok import bistogram
+import statBok
 # Setting parameters ------------------------------------------------
 #input params
-settingSrc = r"../data/TractSetting.json"
+settingSrc = r"../data/MrrSetting.json"
 #-------------------------------------------------------------------
 def load_settings(settingSrc):
     with open(settingSrc) as f:
         pSet = json.load(f)
-        pSet["shapeFields"]=list(pSet["shapeFields"].values())
-        pSet["dataFields"]=list(pSet["dataFields"].values())
+        if len(pSet["shapeFields"])>0:
+            pSet["shapeFields"]=list(pSet["shapeFields"].values())
     return pSet
 
 def load_dataSet(pSet): 
@@ -89,7 +88,7 @@ def add_handle(pSet):
                               (pSet["tipTitle"],pSet["tipName"])])
         return [hover, 'pan', 'tap', 'wheel_zoom']
     
-def fig_gen(pSet, color_mapper, map_handle,geosource):
+def map_gen(pSet, color_mapper, map_handle,geosource):
     #Create color bar. 
     color_bar = ColorBar(color_mapper=color_mapper, label_standoff=8,width = 500, height = 20,
     border_line_color=None,location = (0,0), orientation = 'horizontal') #, major_label_overrides = tick_labels)
@@ -120,12 +119,32 @@ def main_mapper(settingSrc):
     geosource = geo_merge(pSet,df,gdf)
     color_mapper = cMapper (pSet)
     map_handle = add_handle(pSet)
-    patch = fig_gen(pSet, color_mapper, map_handle,geosource)
-    hst = bistogram(pSet, df[pSet["data2Viz"]])
-    button = Button(label="Button", width=300)
-    layout = column(button, row(patch, hst))
-
     
+    patch = map_gen(pSet, color_mapper, map_handle,geosource)
+    hst = statBok.bistogram(pSet, df[pSet["data2Viz"]])
+    button = Button(label="Update", width=300)
+    #label="Factors",
+    select1 = Select(value=pSet["data2Viz"], options=df.columns.to_list())
+    def update_var(attr, old, new):
+        pSet["data2Viz"] = new
+        patch = map_gen(pSet, color_mapper, map_handle,geosource)
+        hst = statBok.bistogram(pSet, df[pSet["data2Viz"]])
+        
+    select1.on_change('value', update_var)
+    
+    #label="Pallets",
+    select2 = Select(value=pSet["cMapName"], options=["Viridis","Spectral",
+                                                      "RdYlGn", "Bokeh", "Turbo256"])
+    def update_cbar (attr, old, new) :
+        pSet["cMapName"] = new
+        color_mapper = cMapper (pSet)
+        patch = map_gen(pSet, color_mapper, map_handle,geosource)
+        hst = statBok.bistogram(pSet, df[pSet["data2Viz"]])
+        
+    select2.on_change('value', update_cbar)
+    layout = column(button, row(patch, hst),row(select1,select2))
+
+
     save(layout,filename = pSet["htmlOut"],title = pSet["figTitle" ])
 
 if __name__ == "__main__":
