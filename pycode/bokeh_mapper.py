@@ -8,26 +8,19 @@ from os import path
 import pandas as pd
 import geopandas as gpd
 import json
+from win32api import GetSystemMetrics
 ## From Bokeh
-from bokeh.io import output_notebook, show, output_file#, hplot
-from bokeh.models import GeoJSONDataSource, ColorBar, HoverTool #,LinearColorMapper,
-from bokeh.models import CustomJS, Div, Button, Select, GMapOptions
+from bokeh.models import GeoJSONDataSource, ColorBar, HoverTool , Paragraph
 from bokeh.palettes import brewer
-from bokeh.plotting import figure, output_file, save, curdoc, gmap
-from bokeh.layouts import column, row
-from bokeh.tile_providers import CARTODBPOSITRON, get_provider, Vendors
-from bokeh.models import mappers
-
-# range bounds supplied in web mercator coordinates
-# p = figure(x_range=(-2000000, 6000000), y_range=(-1000000, 7000000),
-#            x_axis_type="mercator", y_axis_type="mercator")
-
-
+from bokeh.plotting import figure, save
+from bokeh.models import  ColumnDataSource,mappers
+from bokeh.layouts import layout
+from bokeh.io import show
+from bokeh.models.glyphs import Scatter
 # Internal
-#from statBok import bistogram
 import statBok
+
 # Setting parameters ------------------------------------------------
-#input params
 settingSrc = r"../data/rpl.json"
 #-------------------------------------------------------------------
 def load_settings(settingSrc):
@@ -66,9 +59,6 @@ def geo_merge(pSet,df,gdf):
 
     merged_json = json.loads(merged.to_json())
     json_data = json.dumps(merged_json)
-    # with open("merged.json", "w") as data_file:
-    #     json.dump(merged_json, data_file, indent=2)
-
     return GeoJSONDataSource(geojson = json_data)
 
 def cMapper (pSet):
@@ -94,26 +84,46 @@ def add_handle(pSet):
         #Add hover tool
         hover = HoverTool(tooltips = [ ("ID","@"+pSet["dataKey"]),
                               (pSet["dataName2Viz"], "@"+pSet["data2Viz"]),
-                              (pSet["tipTitle"],pSet["tipName"])])
+                              (pSet["tipTitle"],"@"+pSet["tipName"])])
         return [hover, 'pan', 'tap', 'wheel_zoom', 'lasso_select', 'reset']
     
+def add_glyph(fg,x=[],y=[]):
+    if len(x)==0:
+        x=[-95.2744639]
+        y=[29.7825265]
+    source = ColumnDataSource(dict(x=x, y=y))
+    glyph = Scatter(x="x", y="y", size=10, line_color="#000000",fill_alpha=0.1, line_alpha=0.7)
+    fg.add_glyph(glyph,source)
+    fg.aspect_scale=1.0
+    return fg
+
+def add_scatter(df,pSet):
+    scat = figure(width=300, height=300)
+    chk =(df[pSet["data2Viz"]].values == -999) |  (df[pSet["tipName"]].values == -999)  
+    df = df[~chk]
+    scat.scatter(x=df[pSet["data2Viz"]], y=df[pSet["tipName"]] )
+    scat.xaxis.axis_label = pSet["dataName2Viz"]
+    scat.yaxis.axis_label = pSet["tipTitle"]
+    return scat    
+ 
+def add_summary(df, pSet):
+    descb ="Summary :\n " + df[pSet["data2Viz"]].describe().to_string()
+    return Paragraph(text=descb, width=400, height=300)
+       
 def map_gen(pSet, color_mapper, map_handle,geosource):
     #Create color bar. 
-    color_bar = ColorBar(color_mapper=color_mapper, label_standoff=8,width = 500, height = 20,
-    border_line_color=None,location = (0,0), orientation = 'horizontal') #, major_label_overrides = tick_labels)
+    try:
+        wd=GetSystemMetrics(0)
+    except:
+        wd=1200
+        
+    color_bar = ColorBar(color_mapper=color_mapper, label_standoff=10,width = 20, height =  int(0.5*wd),
+    border_line_color=None,location ='left', orientation = 'vertical') #, major_label_overrides = tick_labels)
     
     #Create figure object.
-    p = figure(title = pSet["figTitle"], #plot_height = 600 , plot_width = 950, 
-               # x_range=(-8781403, -6403544), y_range=(11828971, 10874679),
-               # x_axis_type="mercator", y_axis_type="mercator",
-               #x_range=(-107, -93), y_range=(25, 37),
+    p = figure(title = pSet["figTitle"], plot_width = int(0.75*wd), plot_height = int(0.50*wd) , #plot_width = 950, 
                toolbar_location = 'left',tools = map_handle)
-    #gmap_options = GMapOptions(lat=30.00, lng=-95.5, map_type="roadmap", zoom=8)
-    #p = gmap("AIzaSyBuBur_u0ceQNjqYwh4xCJGI95jEax55ok", map_options, )
-    # p.xgrid.grid_line_color = None
-    # p.ygrid.grid_line_color = None
-    # print (tile_provider)
-    # p.add_tile(tile_provider)
+
     p.patches('xs','ys', source = geosource,fill_color = {'field' : pSet["data2Viz"],'transform' : color_mapper},
               line_color = 'black', line_width = 0.25, fill_alpha = 0.8, legend_label =  pSet["dataName2Viz"])
     
@@ -124,83 +134,34 @@ def map_gen(pSet, color_mapper, map_handle,geosource):
          datar['features'][i]['properties']['Color'] = "#000000"
 
     road_source = GeoJSONDataSource(geojson=json.dumps(datar))
-    p.multi_line('xs','ys', source = road_source)
+    p.multi_line('xs','ys', source = road_source, alpha=0.3)
 
     #Specify figure layout.
-    p.add_layout(color_bar, 'below')
-    p.aspect_scale=1.0
-    
+    p.add_layout(color_bar, 'left')
+  
     return p
-
 
     
 def main_mapper(settingSrc): 
-# Files are accesible
     pSet = load_settings(settingSrc)
     # Fields are in dataframes
     df = load_dataSet(pSet)
     gdf = load_polygon(pSet)
     geosource = geo_merge(pSet,df,gdf)
+    # Visualizing
     color_mapper = cMapper (pSet)
     map_handle = add_handle(pSet)
-    
     patch = map_gen(pSet, color_mapper, map_handle,geosource)
+    #patch = add_glyph(path) # Add HFB on Map 
     patch.scatter(y=[29.782526491832318],x=[-95.27446389763395], size=10, color="#000000", alpha=0.6)
+    patch.aspect_scale=1.0
     hst = statBok.bistogram(pSet, df[pSet["data2Viz"]])
-    # button = Button(label="Update", width=300)
-    # #label="Factors",
-    # dSel = Select(value=pSet["data2Viz"], options=df.columns.to_list())
-    # def update_var(attr, old, new):
-    #     pSet["data2Viz"] = new
-    #     patch = map_gen(pSet, color_mapper, map_handle,geosource)
-    #     hst = statBok.bistogram(pSet, df[pSet["data2Viz"]])
-        
-    # dSel.on_change('value', update_var)
-    
-    # #label="Pallets",
-    # cSel = Select(value=pSet["cMapName"], options=["Viridis","Spectral",
-    #                                                   "RdYlGn", "Bokeh", "Turbo256"])
-    # def update_cbar (attr, old, new) :
-    #     pSet["cMapName"] = new
-    #     color_mapper = cMapper (pSet)
-    #     patch = map_gen(pSet, color_mapper, map_handle,geosource)
-    #     #hst = statBok.bistogram(pSet, df[pSet["data2Viz"]])
-        
-    # cSel.on_change('value', update_cbar)
-    # layout = column(button, row(patch, hst),row(cSel,dSel))
+    scat = add_scatter(df,pSet)
+    statsummary = add_summary(df, pSet)  
 
-    layout = row(patch, hst)
-    save(layout,filename = pSet["htmlOut"],title = pSet["figTitle" ])
-    # curdoc().add_root(layout)
-    # curdoc().title = "Map Tool"
-    show(layout)
-    
-    # curdoc().add_root(layout)
-    
-    #def update(attr, old, new):
-        
-    #     inds = new
-    #     if len(inds) == 0 or len(inds) == len(x):
-    #         hhist1, hhist2 = hzeros, hzeros
-    #         vhist1, vhist2 = vzeros, vzeros
-    #     else:
-    #         neg_inds = np.ones_like(x, dtype=np.bool)
-    #         neg_inds[inds] = False
-    #         hhist1, _ = np.histogram(x[inds], bins=hedges)
-    #         vhist1, _ = np.histogram(y[inds], bins=vedges)
-    #         hhist2, _ = np.histogram(x[neg_inds], bins=hedges)
-    #         vhist2, _ = np.histogram(y[neg_inds], bins=vedges)
-    
-    #     hh1.data_source.data["top"]   =  hhist1
-    #     hh2.data_source.data["top"]   = -hhist2
-    #     vh1.data_source.data["right"] =  vhist1
-    #     vh2.data_source.data["right"] = -vhist2
-    
-    #r.patches.selected.on_change('indices', update)
-    
-    
-    
-    
+    lout =layout([patch, [hst,scat,statsummary]])
+    save(lout,filename = pSet["htmlOut"],title = pSet["figTitle" ])
+    show(lout)   
     
 if __name__ == "__main__":
     if 1:

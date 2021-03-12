@@ -10,13 +10,13 @@
 "dataFields":"",
 "dataKey":"fips",
 "data2Viz":"e_totpop",
-"dataName2Viz":"e_totpop",
+"dataName2Viz":"Population",
+"htmlOut": "../data/RplOut_Equi_popul.html",
 "cMapName": "Spectral",
 "mapper": "EqHistColorMapper",
 "cNumber" : "32",
 "reversedColorMap" : "False",
 "figTitle" : "RPL map",
-"htmlOut": "../data/RplOut_equi_totpop.html",
 "tipTitle": "Themes",
-"tipName": "@rpl_themes"
+"tipName": "rpl_themes"
 }
