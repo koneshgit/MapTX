@@ -1,9 +1,11 @@
+-Dveloped by: Mo Koneshloo for HFB-
+-Contact: mkoneshloo-at-gmail-dot-com-
+
 # MapTX
 This repository contains the code and some example data to generate a map visualization of data. It can be used to visualize any quantitive variable as a series of polygon on map. To this aim two components are requiered:
 
 1-Appropriate file of the geometry: a GeoJson file continin a GEOID key (it can be zip code, county subdivision code, county code, ....)
 2- Dataset with the mesured value on each polygone and the same GEOID key  
-
 ## bokeh_mapper.py
 This script reads these two file, preprocess and merge them to generate Bokeh's input. 
 Bokeh provoides a set of flexible tools to interact with visulized map, which is generated as an HTML file by the code. 
@@ -58,3 +60,5 @@ The list of parameter consists of several parts; input, visual, and output param
 ### Output 
 "htmlOut": "../data/TractOut.html",
 }
+
+<img src="Rpl_Tracks.PNG" alt="Census population map, source: RPL.csv, color map based on equi-histogram">
